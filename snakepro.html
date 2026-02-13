@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Castle Snake Pro</title>
+
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+
+.topbar{
+    background:#000;
+    padding:10px;
+}
+
+button{
+    padding:10px 20px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#4CAF50;
+    color:white;
+}
+
+.hidden{ display:none; }
+
+canvas{
+    background:#1a1a1a;
+    margin:20px auto;
+    display:block;
+    border:3px solid #4CAF50;
+}
+</style>
+
+</head>
+<body>
+
+<div class="topbar">
+Coins: <span id="coinsDisplay">0</span> |
+High Score: <span id="highDisplay">0</span>
+</div>
+
+<!-- ===== MENU ===== -->
+<div id="menuScreen">
+    <h1>🐍 Castle Snake Pro</h1>
+    <button onclick="showGame()">Play</button>
+    <button onclick="showShop()">Shop</button>
+    <button onclick="showLocker()">Locker</button>
+</div>
+
+<!-- ===== GAME ===== -->
+<div id="gameScreen" class="hidden">
+    <button onclick="showMenu()">⬅ Menu</button>
+    <h2>Classic Map</h2>
+    <div>Score: <span id="score">0</span></div>
+    <canvas id="game" width="400" height="400"></canvas>
+</div>
+
+<!-- ===== SHOP ===== -->
+<div id="shopScreen" class="hidden">
+    <h2>🛒 Shop</h2>
+    <button onclick="buyColor('cyan',20)">Cyan (20)</button>
+    <button onclick="buyColor('yellow',30)">Yellow (30)</button>
+    <br>
+    <button onclick="showMenu()">⬅ Back</button>
+</div>
+
+<!-- ===== LOCKER ===== -->
+<div id="lockerScreen" class="hidden">
+    <h2>🔒 Locker</h2>
+    <div id="ownedColors"></div>
+    <button onclick="showMenu()">⬅ Back</button>
+</div>
+
+<script>
+
+// ===== GLOBAL DATA =====
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+let highScore = parseInt(localStorage.getItem("highScore")) || 0;
+let ownedColors = JSON.parse(localStorage.getItem("ownedColors")) || ["green"];
+let equippedColor = localStorage.getItem("equippedColor") || "green";
+
+updateUI();
+
+// ===== SCREEN CONTROL =====
+function showMenu(){
+    hideAll();
+    document.getElementById("menuScreen").classList.remove("hidden");
+}
+
+function showGame(){
+    hideAll();
+    document.getElementById("gameScreen").classList.remove("hidden");
+    startGame();
+}
+
+function showShop(){
+    hideAll();
+    document.getElementById("shopScreen").classList.remove("hidden");
+}
+
+function showLocker(){
+    hideAll();
+    document.getElementById("lockerScreen").classList.remove("hidden");
+    renderLocker();
+}
+
+function hideAll(){
+    document.getElementById("menuScreen").classList.add("hidden");
+    document.getElementById("gameScreen").classList.add("hidden");
+    document.getElementById("shopScreen").classList.add("hidden");
+    document.getElementById("lockerScreen").classList.add("hidden");
+}
+
+// ===== SHOP SYSTEM =====
+function buyColor(color, price){
+    if(coins >= price && !ownedColors.includes(color)){
+        coins -= price;
+        ownedColors.push(color);
+        saveData();
+        alert("Purchased!");
+    }else{
+        alert("Not enough coins or already owned.");
+    }
+}
+
+function renderLocker(){
+    let div = document.getElementById("ownedColors");
+    div.innerHTML="";
+    ownedColors.forEach(c=>{
+        div.innerHTML += `<button onclick="equipColor('${c}')">${c}</button>`;
+    });
+}
+
+function equipColor(color){
+    equippedColor = color;
+    localStorage.setItem("equippedColor", color);
+    alert("Equipped!");
+}
+
+// ===== SAVE =====
+function saveData(){
+    localStorage.setItem("coins", coins);
+    localStorage.setItem("highScore", highScore);
+    localStorage.setItem("ownedColors", JSON.stringify(ownedColors));
+    updateUI();
+}
+
+function updateUI(){
+    document.getElementById("coinsDisplay").innerText = coins;
+    document.getElementById("highDisplay").innerText = highScore;
+}
+
+// ===== GAME ENGINE =====
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const box = 20;
+
+let snake, food, direction, score, game;
+
+function startGame(){
+    snake=[{x:200,y:200}];
+    direction="RIGHT";
+    score=0;
+    spawnFood();
+    clearInterval(game);
+    game=setInterval(draw,100);
+}
+
+function spawnFood(){
+    food={
+        x:Math.floor(Math.random()*20)*box,
+        y:Math.floor(Math.random()*20)*box
+    };
+}
+
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
+    if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
+    if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
+    if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
+});
+
+function draw(){
+    ctx.fillStyle="#1a1a1a";
+    ctx.fillRect(0,0,400,400);
+
+    ctx.fillStyle="red";
+    ctx.fillRect(food.x,food.y,box,box);
+
+    ctx.fillStyle=equippedColor;
+    snake.forEach(p=>ctx.fillRect(p.x,p.y,box,box));
+
+    let headX=snake[0].x;
+    let headY=snake[0].y;
+
+    if(direction==="LEFT") headX-=box;
+    if(direction==="RIGHT") headX+=box;
+    if(direction==="UP") headY-=box;
+    if(direction==="DOWN") headY+=box;
+
+    if(headX<0||headY<0||headX>=400||headY>=400){
+        endGame();
+        return;
+    }
+
+    if(headX===food.x && headY===food.y){
+        score++;
+        coins++;
+        spawnFood();
+    }else{
+        snake.pop();
+    }
+
+    snake.unshift({x:headX,y:headY});
+    document.getElementById("score").innerText=score;
+}
+
+function endGame(){
+    clearInterval(game);
+
+    if(score > highScore){
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
+    }
+
+    saveData();
+    alert("Game Over!");
+    showMenu();
+}
+
+</script>
+
+</body>
+</html>
