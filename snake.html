@@ -97,34 +97,81 @@ document.getElementById("high").innerText = highScore;
 
 let game;
 
+// ===== INICIO =====
 function init(){
     snake=[{x:200,y:200}];
     foods=[];
     obstacles=[];
     direction="RIGHT";
     score=0;
+
     document.getElementById("score").innerText=score;
     document.getElementById("gameOver").style.display="none";
 
     spawnFood(1);
 }
 
+// ===== SPAWN SEGURO COMIDA =====
 function spawnFood(amount){
     for(let i=0;i<amount;i++){
-        foods.push({
-            x:Math.floor(Math.random()*20)*box,
-            y:Math.floor(Math.random()*20)*box
-        });
+        let newFood;
+        let valid=false;
+
+        while(!valid){
+            newFood={
+                x:Math.floor(Math.random()*20)*box,
+                y:Math.floor(Math.random()*20)*box
+            };
+
+            valid=true;
+
+            for(let part of snake){
+                if(part.x===newFood.x && part.y===newFood.y){
+                    valid=false;
+                }
+            }
+
+            for(let o of obstacles){
+                if(o.x===newFood.x && o.y===newFood.y){
+                    valid=false;
+                }
+            }
+        }
+
+        foods.push(newFood);
     }
 }
 
+// ===== SPAWN SEGURO OBSTÁCULO =====
 function spawnObstacle(){
-    obstacles.push({
-        x:Math.floor(Math.random()*20)*box,
-        y:Math.floor(Math.random()*20)*box
-    });
+    let newObs;
+    let valid=false;
+
+    while(!valid){
+        newObs={
+            x:Math.floor(Math.random()*20)*box,
+            y:Math.floor(Math.random()*20)*box
+        };
+
+        valid=true;
+
+        for(let part of snake){
+            if(part.x===newObs.x && part.y===newObs.y){
+                valid=false;
+            }
+        }
+
+        for(let f of foods){
+            if(f.x===newObs.x && f.y===newObs.y){
+                valid=false;
+            }
+        }
+    }
+
+    obstacles.push(newObs);
 }
 
+// ===== CONTROLES =====
 document.addEventListener("keydown",e=>{
     if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
     if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
@@ -132,20 +179,22 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
 });
 
+// ===== DIBUJAR =====
 function draw(){
     ctx.fillStyle="#1a1a1a";
     ctx.fillRect(0,0,400,400);
 
-    // Obstacles
+    // Obstáculos
     ctx.fillStyle="gray";
     obstacles.forEach(o=>ctx.fillRect(o.x,o.y,box,box));
 
-    // Food
+    // Comida
     ctx.fillStyle="red";
     foods.forEach(f=>ctx.fillRect(f.x,f.y,box,box));
 
-    // Snake
+    // Serpiente
     let snakeColor=document.getElementById("color").value;
+
     for(let i=0;i<snake.length;i++){
         ctx.fillStyle=i===0?snakeColor:"#00aa00";
         ctx.fillRect(snake[i].x,snake[i].y,box,box);
@@ -159,13 +208,13 @@ function draw(){
     if(direction==="UP") headY-=box;
     if(direction==="DOWN") headY+=box;
 
-    // Wall collision
+    // Colisión con pared
     if(headX<0||headY<0||headX>=400||headY>=400){
         gameOver();
         return;
     }
 
-    // Obstacle collision
+    // Colisión obstáculo
     for(let o of obstacles){
         if(headX===o.x && headY===o.y){
             gameOver();
@@ -173,7 +222,7 @@ function draw(){
         }
     }
 
-    // Self collision
+    // Colisión consigo misma
     for(let part of snake){
         if(headX===part.x && headY===part.y){
             gameOver();
@@ -205,6 +254,7 @@ function draw(){
     snake.unshift({x:headX,y:headY});
 }
 
+// ===== GAME OVER =====
 function gameOver(){
     clearInterval(game);
     document.getElementById("gameOver").style.display="block";
@@ -216,6 +266,7 @@ function gameOver(){
     }
 }
 
+// ===== REINICIAR =====
 function restart(){
     clearInterval(game);
     init();
@@ -223,6 +274,7 @@ function restart(){
     game=setInterval(draw,speed);
 }
 
+// START
 init();
 game=setInterval(draw,100);
 </script>
