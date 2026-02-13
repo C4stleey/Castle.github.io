@@ -1,177 +1,214 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Snake - Castle Games</title>
+<title>Castle Snake Pro</title>
 <style>
 body{
-    background:#0f0f0f;
-    color:white;
-    text-align:center;
-    font-family:Arial;
     margin:0;
-}
-canvas{
-    background:#1a1a1a;
-    display:block;
-    margin:20px auto;
-    border:3px solid #4CAF50;
-}
-.back{
-    position:absolute;
-    top:15px;
-    left:15px;
-    background:#ff4c4c;
-    padding:8px 12px;
-    border-radius:8px;
-    text-decoration:none;
+    background:#111;
     color:white;
-}
-.controls{
-    margin-top:10px;
-}
-select{
-    padding:5px;
-    border-radius:5px;
+    font-family:Arial;
+    text-align:center;
 }
 button{
-    padding:8px 15px;
+    padding:10px 20px;
+    margin:5px;
     border:none;
     border-radius:8px;
+    cursor:pointer;
     background:#4CAF50;
     color:white;
-    cursor:pointer;
 }
-.gameover{
-    font-size:24px;
-    color:red;
-    display:none;
+.hidden{ display:none; }
+
+canvas{
+    background:#1a1a1a;
+    margin:20px auto;
+    display:block;
+    border:3px solid #4CAF50;
+}
+.topbar{
+    padding:10px;
+    background:#000;
 }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="back">⬅ Menu</a>
-
-<h1>🐍 Snake</h1>
-
-<div>
-Score: <span id="score">0</span> |
-High Score: <span id="high">0</span>
+<div class="topbar">
+Coins: <span id="coinsDisplay">0</span> |
+High Score: <span id="highDisplay">0</span>
 </div>
 
-<div class="controls">
-Difficulty:
-<select id="difficulty">
-<option value="150">Easy</option>
-<option value="100" selected>Normal</option>
-<option value="70">Hard</option>
-</select>
-
-Color:
-<select id="color">
-<option value="#00ff00">Green</option>
-<option value="#00ffff">Cyan</option>
-<option value="#ff00ff">Purple</option>
-<option value="#ffff00">Yellow</option>
-</select>
+<!-- ===== MENU ===== -->
+<div id="menuScreen">
+    <h1>🐍 Castle Snake Pro</h1>
+    <button onclick="showGame()">Play</button>
+    <button onclick="showMaps()">Choose Map</button>
+    <button onclick="showShop()">Shop</button>
+    <button onclick="showLocker()">Locker</button>
 </div>
 
-<canvas id="game" width="400" height="400"></canvas>
+<!-- ===== GAME ===== -->
+<div id="gameScreen" class="hidden">
+    <button onclick="showMenu()">⬅ Menu</button>
+    <h2 id="mapName">Map: Classic</h2>
+    <div>Score: <span id="score">0</span></div>
+    <canvas id="game" width="400" height="400"></canvas>
+</div>
 
-<div class="gameover" id="gameOver">💀 Game Over</div>
-<br>
-<button onclick="restart()">Restart</button>
+<!-- ===== SHOP ===== -->
+<div id="shopScreen" class="hidden">
+    <h2>🛒 Shop</h2>
+    <button onclick="buyColor('cyan',20)">Cyan (20)</button>
+    <button onclick="buyColor('yellow',30)">Yellow (30)</button>
+    <br>
+    <button onclick="showMenu()">⬅ Back</button>
+</div>
+
+<!-- ===== LOCKER ===== -->
+<div id="lockerScreen" class="hidden">
+    <h2>🔒 Locker</h2>
+    <div id="ownedColors"></div>
+    <button onclick="showMenu()">⬅ Back</button>
+</div>
+
+<!-- ===== MAPS ===== -->
+<div id="mapsScreen" class="hidden">
+    <h2>🗺 Choose Map</h2>
+    <button onclick="selectMap('classic')">Classic</button>
+    <button onclick="unlockSnow()">Snow (Unlock: 20 HighScore)</button>
+    <br>
+    <button onclick="showMenu()">⬅ Back</button>
+</div>
 
 <script>
+
+// ===== GLOBAL DATA =====
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+let highScore = parseInt(localStorage.getItem("highScore")) || 0;
+let ownedColors = JSON.parse(localStorage.getItem("ownedColors")) || ["green"];
+let equippedColor = localStorage.getItem("equippedColor") || "green";
+let selectedMap = localStorage.getItem("selectedMap") || "classic";
+
+updateUI();
+
+// ===== SCREEN CONTROL =====
+function showMenu(){
+    hideAll();
+    document.getElementById("menuScreen").classList.remove("hidden");
+}
+
+function showGame(){
+    hideAll();
+    document.getElementById("gameScreen").classList.remove("hidden");
+    startGame();
+}
+
+function showShop(){
+    hideAll();
+    document.getElementById("shopScreen").classList.remove("hidden");
+}
+
+function showLocker(){
+    hideAll();
+    document.getElementById("lockerScreen").classList.remove("hidden");
+    renderLocker();
+}
+
+function showMaps(){
+    hideAll();
+    document.getElementById("mapsScreen").classList.remove("hidden");
+}
+
+function hideAll(){
+    document.getElementById("menuScreen").classList.add("hidden");
+    document.getElementById("gameScreen").classList.add("hidden");
+    document.getElementById("shopScreen").classList.add("hidden");
+    document.getElementById("lockerScreen").classList.add("hidden");
+    document.getElementById("mapsScreen").classList.add("hidden");
+}
+
+// ===== SHOP SYSTEM =====
+function buyColor(color, price){
+    if(coins >= price && !ownedColors.includes(color)){
+        coins -= price;
+        ownedColors.push(color);
+        saveData();
+        alert("Purchased!");
+    }else{
+        alert("Not enough coins or already owned.");
+    }
+}
+
+function renderLocker(){
+    let div = document.getElementById("ownedColors");
+    div.innerHTML="";
+    ownedColors.forEach(c=>{
+        div.innerHTML += `<button onclick="equipColor('${c}')">${c}</button>`;
+    });
+}
+
+function equipColor(color){
+    equippedColor = color;
+    localStorage.setItem("equippedColor", color);
+    alert("Equipped!");
+}
+
+// ===== MAP SYSTEM =====
+function selectMap(map){
+    selectedMap = map;
+    localStorage.setItem("selectedMap", map);
+    alert("Map Selected!");
+}
+
+function unlockSnow(){
+    if(highScore >= 20){
+        selectedMap="snow";
+        localStorage.setItem("selectedMap","snow");
+        alert("Snow Unlocked!");
+    }else{
+        alert("Need 20 High Score!");
+    }
+}
+
+// ===== SAVE =====
+function saveData(){
+    localStorage.setItem("coins", coins);
+    localStorage.setItem("highScore", highScore);
+    localStorage.setItem("ownedColors", JSON.stringify(ownedColors));
+    updateUI();
+}
+
+function updateUI(){
+    document.getElementById("coinsDisplay").innerText = coins;
+    document.getElementById("highDisplay").innerText = highScore;
+}
+
+// ===== GAME ENGINE BASE =====
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const box = 20;
 
-let snake;
-let foods;
-let obstacles;
-let direction;
-let score;
-let highScore = localStorage.getItem("snakeHigh") || 0;
-document.getElementById("high").innerText = highScore;
+let snake, food, direction, score, game;
 
-let game;
-
-// ===== INICIO =====
-function init(){
+function startGame(){
     snake=[{x:200,y:200}];
-    foods=[];
-    obstacles=[];
     direction="RIGHT";
     score=0;
-
-    document.getElementById("score").innerText=score;
-    document.getElementById("gameOver").style.display="none";
-
-    spawnFood(1);
+    spawnFood();
+    clearInterval(game);
+    game=setInterval(draw,100);
+    document.getElementById("mapName").innerText="Map: "+selectedMap;
 }
 
-// ===== SPAWN SEGURO COMIDA =====
-function spawnFood(amount){
-    for(let i=0;i<amount;i++){
-        let newFood;
-        let valid=false;
-
-        while(!valid){
-            newFood={
-                x:Math.floor(Math.random()*20)*box,
-                y:Math.floor(Math.random()*20)*box
-            };
-
-            valid=true;
-
-            for(let part of snake){
-                if(part.x===newFood.x && part.y===newFood.y){
-                    valid=false;
-                }
-            }
-
-            for(let o of obstacles){
-                if(o.x===newFood.x && o.y===newFood.y){
-                    valid=false;
-                }
-            }
-        }
-
-        foods.push(newFood);
-    }
+function spawnFood(){
+    food={
+        x:Math.floor(Math.random()*20)*box,
+        y:Math.floor(Math.random()*20)*box
+    };
 }
 
-// ===== SPAWN SEGURO OBSTÁCULO =====
-function spawnObstacle(){
-    let newObs;
-    let valid=false;
-
-    while(!valid){
-        newObs={
-            x:Math.floor(Math.random()*20)*box,
-            y:Math.floor(Math.random()*20)*box
-        };
-
-        valid=true;
-
-        for(let part of snake){
-            if(part.x===newObs.x && part.y===newObs.y){
-                valid=false;
-            }
-        }
-
-        for(let f of foods){
-            if(f.x===newObs.x && f.y===newObs.y){
-                valid=false;
-            }
-        }
-    }
-
-    obstacles.push(newObs);
-}
-
-// ===== CONTROLES =====
 document.addEventListener("keydown",e=>{
     if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
     if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
@@ -179,26 +216,15 @@ document.addEventListener("keydown",e=>{
     if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
 });
 
-// ===== DIBUJAR =====
 function draw(){
-    ctx.fillStyle="#1a1a1a";
+    ctx.fillStyle = selectedMap==="snow" ? "#e6f7ff" : "#1a1a1a";
     ctx.fillRect(0,0,400,400);
 
-    // Obstáculos
-    ctx.fillStyle="gray";
-    obstacles.forEach(o=>ctx.fillRect(o.x,o.y,box,box));
-
-    // Comida
     ctx.fillStyle="red";
-    foods.forEach(f=>ctx.fillRect(f.x,f.y,box,box));
+    ctx.fillRect(food.x,food.y,box,box);
 
-    // Serpiente
-    let snakeColor=document.getElementById("color").value;
-
-    for(let i=0;i<snake.length;i++){
-        ctx.fillStyle=i===0?snakeColor:"#00aa00";
-        ctx.fillRect(snake[i].x,snake[i].y,box,box);
-    }
+    ctx.fillStyle=equippedColor;
+    snake.forEach(p=>ctx.fillRect(p.x,p.y,box,box));
 
     let headX=snake[0].x;
     let headY=snake[0].y;
@@ -208,75 +234,36 @@ function draw(){
     if(direction==="UP") headY-=box;
     if(direction==="DOWN") headY+=box;
 
-    // Colisión con pared
     if(headX<0||headY<0||headX>=400||headY>=400){
-        gameOver();
+        endGame();
         return;
     }
 
-    // Colisión obstáculo
-    for(let o of obstacles){
-        if(headX===o.x && headY===o.y){
-            gameOver();
-            return;
-        }
-    }
-
-    // Colisión consigo misma
-    for(let part of snake){
-        if(headX===part.x && headY===part.y){
-            gameOver();
-            return;
-        }
-    }
-
-    let ate=false;
-
-    for(let i=0;i<foods.length;i++){
-        if(headX===foods[i].x && headY===foods[i].y){
-            score++;
-            document.getElementById("score").innerText=score;
-            foods.splice(i,1);
-            spawnFood(1);
-            ate=true;
-
-            if(score%5===0){
-                spawnObstacle();
-            }
-            break;
-        }
-    }
-
-    if(!ate){
+    if(headX===food.x && headY===food.y){
+        score++;
+        coins++;
+        spawnFood();
+    }else{
         snake.pop();
     }
 
     snake.unshift({x:headX,y:headY});
+    document.getElementById("score").innerText=score;
 }
 
-// ===== GAME OVER =====
-function gameOver(){
+function endGame(){
     clearInterval(game);
-    document.getElementById("gameOver").style.display="block";
 
-    if(score>highScore){
-        highScore=score;
-        localStorage.setItem("snakeHigh",highScore);
-        document.getElementById("high").innerText=highScore;
+    if(score > highScore){
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
     }
+
+    saveData();
+    alert("Game Over!");
+    showMenu();
 }
 
-// ===== REINICIAR =====
-function restart(){
-    clearInterval(game);
-    init();
-    let speed=document.getElementById("difficulty").value;
-    game=setInterval(draw,speed);
-}
-
-// START
-init();
-game=setInterval(draw,100);
 </script>
 
 </body>
