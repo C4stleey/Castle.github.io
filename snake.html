@@ -1,270 +1,194 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Castle Snake Pro</title>
 <style>
 body{
     margin:0;
     background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial, sans-serif;
 }
-button{
-    padding:10px 20px;
-    margin:5px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    background:#4CAF50;
-    color:white;
-}
-.hidden{ display:none; }
-
 canvas{
-    background:#1a1a1a;
-    margin:20px auto;
-    display:block;
-    border:3px solid #4CAF50;
-}
-.topbar{
-    padding:10px;
     background:#000;
+    border:4px solid #00ffcc;
 }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-Coins: <span id="coinsDisplay">0</span> |
-High Score: <span id="highDisplay">0</span>
-</div>
-
-<!-- ===== MENU ===== -->
-<div id="menuScreen">
-    <h1>🐍 Castle Snake Pro</h1>
-    <button onclick="showGame()">Play</button>
-    <button onclick="showMaps()">Choose Map</button>
-    <button onclick="showShop()">Shop</button>
-    <button onclick="showLocker()">Locker</button>
-</div>
-
-<!-- ===== GAME ===== -->
-<div id="gameScreen" class="hidden">
-    <button onclick="showMenu()">⬅ Menu</button>
-    <h2 id="mapName">Map: Classic</h2>
-    <div>Score: <span id="score">0</span></div>
-    <canvas id="game" width="400" height="400"></canvas>
-</div>
-
-<!-- ===== SHOP ===== -->
-<div id="shopScreen" class="hidden">
-    <h2>🛒 Shop</h2>
-    <button onclick="buyColor('cyan',20)">Cyan (20)</button>
-    <button onclick="buyColor('yellow',30)">Yellow (30)</button>
-    <br>
-    <button onclick="showMenu()">⬅ Back</button>
-</div>
-
-<!-- ===== LOCKER ===== -->
-<div id="lockerScreen" class="hidden">
-    <h2>🔒 Locker</h2>
-    <div id="ownedColors"></div>
-    <button onclick="showMenu()">⬅ Back</button>
-</div>
-
-<!-- ===== MAPS ===== -->
-<div id="mapsScreen" class="hidden">
-    <h2>🗺 Choose Map</h2>
-    <button onclick="selectMap('classic')">Classic</button>
-    <button onclick="unlockSnow()">Snow (Unlock: 20 HighScore)</button>
-    <br>
-    <button onclick="showMenu()">⬅ Back</button>
-</div>
+<canvas id="game" width="500" height="500"></canvas>
 
 <script>
 
-// ===== GLOBAL DATA =====
-let coins = parseInt(localStorage.getItem("coins")) || 0;
-let highScore = parseInt(localStorage.getItem("highScore")) || 0;
-let ownedColors = JSON.parse(localStorage.getItem("ownedColors")) || ["green"];
-let equippedColor = localStorage.getItem("equippedColor") || "green";
-let selectedMap = localStorage.getItem("selectedMap") || "classic";
-
-updateUI();
-
-// ===== SCREEN CONTROL =====
-function showMenu(){
-    hideAll();
-    document.getElementById("menuScreen").classList.remove("hidden");
-}
-
-function showGame(){
-    hideAll();
-    document.getElementById("gameScreen").classList.remove("hidden");
-    startGame();
-}
-
-function showShop(){
-    hideAll();
-    document.getElementById("shopScreen").classList.remove("hidden");
-}
-
-function showLocker(){
-    hideAll();
-    document.getElementById("lockerScreen").classList.remove("hidden");
-    renderLocker();
-}
-
-function showMaps(){
-    hideAll();
-    document.getElementById("mapsScreen").classList.remove("hidden");
-}
-
-function hideAll(){
-    document.getElementById("menuScreen").classList.add("hidden");
-    document.getElementById("gameScreen").classList.add("hidden");
-    document.getElementById("shopScreen").classList.add("hidden");
-    document.getElementById("lockerScreen").classList.add("hidden");
-    document.getElementById("mapsScreen").classList.add("hidden");
-}
-
-// ===== SHOP SYSTEM =====
-function buyColor(color, price){
-    if(coins >= price && !ownedColors.includes(color)){
-        coins -= price;
-        ownedColors.push(color);
-        saveData();
-        alert("Purchased!");
-    }else{
-        alert("Not enough coins or already owned.");
-    }
-}
-
-function renderLocker(){
-    let div = document.getElementById("ownedColors");
-    div.innerHTML="";
-    ownedColors.forEach(c=>{
-        div.innerHTML += `<button onclick="equipColor('${c}')">${c}</button>`;
-    });
-}
-
-function equipColor(color){
-    equippedColor = color;
-    localStorage.setItem("equippedColor", color);
-    alert("Equipped!");
-}
-
-// ===== MAP SYSTEM =====
-function selectMap(map){
-    selectedMap = map;
-    localStorage.setItem("selectedMap", map);
-    alert("Map Selected!");
-}
-
-function unlockSnow(){
-    if(highScore >= 20){
-        selectedMap="snow";
-        localStorage.setItem("selectedMap","snow");
-        alert("Snow Unlocked!");
-    }else{
-        alert("Need 20 High Score!");
-    }
-}
-
-// ===== SAVE =====
-function saveData(){
-    localStorage.setItem("coins", coins);
-    localStorage.setItem("highScore", highScore);
-    localStorage.setItem("ownedColors", JSON.stringify(ownedColors));
-    updateUI();
-}
-
-function updateUI(){
-    document.getElementById("coinsDisplay").innerText = coins;
-    document.getElementById("highDisplay").innerText = highScore;
-}
-
-// ===== GAME ENGINE BASE =====
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const box = 20;
 
-let snake, food, direction, score, game;
+const tile = 20;
+const size = 500;
 
-function startGame(){
-    snake=[{x:200,y:200}];
-    direction="RIGHT";
-    score=0;
+let state = "menu"; // menu, game, gameover
+let snake, direction, food;
+let interval;
+let speed = 100;
+
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+let highscore = parseInt(localStorage.getItem("highscore")) || 0;
+let snakeColor = localStorage.getItem("snakeColor") || "lime";
+
+function initGame(){
+    snake = [{x:240,y:240}];
+    direction = null;
     spawnFood();
-    clearInterval(game);
-    game=setInterval(draw,100);
-    document.getElementById("mapName").innerText="Map: "+selectedMap;
 }
 
 function spawnFood(){
-    food={
-        x:Math.floor(Math.random()*20)*box,
-        y:Math.floor(Math.random()*20)*box
+    food = {
+        x: Math.floor(Math.random()*25)*20,
+        y: Math.floor(Math.random()*25)*20
     };
 }
 
-document.addEventListener("keydown",e=>{
-    if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
-    if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
-    if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
-    if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
-});
+function startGame(){
+    state = "game";
+    initGame();
+    interval = setInterval(update, speed);
+}
 
-function draw(){
-    ctx.fillStyle = selectedMap==="snow" ? "#e6f7ff" : "#1a1a1a";
-    ctx.fillRect(0,0,400,400);
+function update(){
 
-    ctx.fillStyle="red";
-    ctx.fillRect(food.x,food.y,box,box);
+    if(!direction) return;
 
-    ctx.fillStyle=equippedColor;
-    snake.forEach(p=>ctx.fillRect(p.x,p.y,box,box));
+    let head = {x:snake[0].x, y:snake[0].y};
 
-    let headX=snake[0].x;
-    let headY=snake[0].y;
+    if(direction=="right") head.x+=tile;
+    if(direction=="left") head.x-=tile;
+    if(direction=="up") head.y-=tile;
+    if(direction=="down") head.y+=tile;
 
-    if(direction==="LEFT") headX-=box;
-    if(direction==="RIGHT") headX+=box;
-    if(direction==="UP") headY-=box;
-    if(direction==="DOWN") headY+=box;
-
-    if(headX<0||headY<0||headX>=400||headY>=400){
+    if(head.x<0 || head.y<0 || head.x>=size || head.y>=size){
         endGame();
         return;
     }
 
-    if(headX===food.x && headY===food.y){
-        score++;
+    for(let part of snake){
+        if(head.x==part.x && head.y==part.y){
+            endGame();
+            return;
+        }
+    }
+
+    snake.unshift(head);
+
+    if(head.x==food.x && head.y==food.y){
         coins++;
+        localStorage.setItem("coins",coins);
         spawnFood();
     }else{
         snake.pop();
     }
-
-    snake.unshift({x:headX,y:headY});
-    document.getElementById("score").innerText=score;
 }
 
 function endGame(){
-    clearInterval(game);
+    clearInterval(interval);
+    state = "gameover";
 
-    if(score > highScore){
-        highScore = score;
-        localStorage.setItem("highScore", highScore);
+    if(snake.length > highscore){
+        highscore = snake.length;
+        localStorage.setItem("highscore",highscore);
     }
-
-    saveData();
-    alert("Game Over!");
-    showMenu();
 }
 
-</script>
+function drawGrid(){
+    ctx.strokeStyle="#222";
+    for(let i=0;i<size;i+=20){
+        ctx.beginPath();
+        ctx.moveTo(i,0);
+        ctx.lineTo(i,size);
+        ctx.stroke();
 
+        ctx.beginPath();
+        ctx.moveTo(0,i);
+        ctx.lineTo(size,i);
+        ctx.stroke();
+    }
+}
+
+function draw(){
+
+    ctx.clearRect(0,0,size,size);
+
+    if(state=="menu"){
+        ctx.fillStyle="white";
+        ctx.font="40px Arial";
+        ctx.fillText("🐍 CASTLE SNAKE",110,180);
+
+        ctx.font="20px Arial";
+        ctx.fillText("High Score: "+highscore,170,230);
+        ctx.fillText("Coins: "+coins,200,260);
+
+        ctx.fillStyle="#00ffcc";
+        ctx.fillRect(175,300,150,50);
+        ctx.fillStyle="black";
+        ctx.fillText("PLAY",220,333);
+    }
+
+    if(state=="game"){
+        drawGrid();
+
+        ctx.fillStyle="red";
+        ctx.fillRect(food.x,food.y,tile,tile);
+
+        ctx.fillStyle=snakeColor;
+        for(let part of snake){
+            ctx.fillRect(part.x,part.y,tile,tile);
+        }
+    }
+
+    if(state=="gameover"){
+        drawGrid();
+
+        ctx.fillStyle="red";
+        ctx.font="40px Arial";
+        ctx.fillText("GAME OVER",150,220);
+
+        ctx.font="20px Arial";
+        ctx.fillText("Score: "+snake.length,200,260);
+        ctx.fillText("Click to return",180,300);
+    }
+
+    requestAnimationFrame(draw);
+}
+
+canvas.addEventListener("click", e=>{
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    if(state=="menu"){
+        if(mx>175 && mx<325 && my>300 && my<350){
+            startGame();
+        }
+    }
+
+    if(state=="gameover"){
+        state="menu";
+    }
+});
+
+document.addEventListener("keydown", e=>{
+    if(e.key=="ArrowRight" && direction!="left") direction="right";
+    if(e.key=="ArrowLeft" && direction!="right") direction="left";
+    if(e.key=="ArrowUp" && direction!="down") direction="up";
+    if(e.key=="ArrowDown" && direction!="up") direction="down";
+});
+
+draw();
+
+</script>
 </body>
 </html>
