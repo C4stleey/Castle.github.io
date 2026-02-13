@@ -2,74 +2,18 @@
 <html>
 <head>
     <title>Castle Games</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: white;
-            text-align: center;
-        }
-
-        header {
-            background: #1f1f1f;
-            padding: 20px;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .games {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            padding: 30px;
-        }
-
-        .game-card {
-            background: #222;
-            padding: 20px;
-            border-radius: 10px;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-
-        .game-card:hover {
-            background: #333;
-            transform: scale(1.05);
-        }
-
-        a {
-            text-decoration: none;
-            color: white;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<header>
-    🎮 Castle Games
-</header>
+    <h1>🎮 Castle Games</h1>
+    <p>Choose a game:</p>
 
-<div class="games">
-    <a href="#">
-        <div class="game-card">
-            🧠 Puzzle Game
-        </div>
-    </a>
-
-    <a href="#">
-        <div class="game-card">
-            🚀 Space Game
-        </div>
-    </a>
-
-    <a href="#">
-        <div class="game-card">
-            ⚡ Speed Game
-        </div>
-    </a>
-</div>
+    <div class="menu">
+        <a href="puzzle.html" class="game-card">🧠 Memory Game</a>
+        <a href="snake.html" class="game-card">🐍 Snake</a>
+        <a href="#" class="game-card">🔥 Coming Soon</a>
+    </div>
 
 </body>
 </html>
