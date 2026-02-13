@@ -1,240 +1,244 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Castle Snake Pro</title>
-
 <style>
 body{
     margin:0;
     background:#111;
+    font-family:Arial, sans-serif;
     color:white;
-    font-family:Arial;
-    text-align:center;
 }
 
-.topbar{
+.container{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:20px;
+    gap:30px;
+}
+
+canvas{
     background:#000;
-    padding:10px;
+    border:4px solid #00ffcc;
+}
+
+.panel{
+    width:220px;
+    background:#1a1a1a;
+    padding:15px;
+    border-radius:10px;
 }
 
 button{
-    padding:10px 20px;
-    margin:5px;
+    width:100%;
+    padding:10px;
+    margin-top:10px;
     border:none;
-    border-radius:8px;
+    border-radius:6px;
+    background:#00ffcc;
+    font-weight:bold;
     cursor:pointer;
-    background:#4CAF50;
-    color:white;
 }
 
-.hidden{ display:none; }
+button:hover{
+    background:#00ccaa;
+}
 
-canvas{
-    background:#1a1a1a;
-    margin:20px auto;
-    display:block;
-    border:3px solid #4CAF50;
+h2{
+    margin-top:0;
+}
+
+.stat{
+    margin:8px 0;
 }
 </style>
-
 </head>
 <body>
 
-<div class="topbar">
-Coins: <span id="coinsDisplay">0</span> |
-High Score: <span id="highDisplay">0</span>
-</div>
+<div class="container">
 
-<!-- ===== MENU ===== -->
-<div id="menuScreen">
-    <h1>🐍 Castle Snake Pro</h1>
-    <button onclick="showGame()">Play</button>
-    <button onclick="showShop()">Shop</button>
-    <button onclick="showLocker()">Locker</button>
-</div>
-
-<!-- ===== GAME ===== -->
-<div id="gameScreen" class="hidden">
-    <button onclick="showMenu()">⬅ Menu</button>
-    <h2>Classic Map</h2>
-    <div>Score: <span id="score">0</span></div>
     <canvas id="game" width="400" height="400"></canvas>
-</div>
 
-<!-- ===== SHOP ===== -->
-<div id="shopScreen" class="hidden">
-    <h2>🛒 Shop</h2>
-    <button onclick="buyColor('cyan',20)">Cyan (20)</button>
-    <button onclick="buyColor('yellow',30)">Yellow (30)</button>
-    <br>
-    <button onclick="showMenu()">⬅ Back</button>
-</div>
+    <div class="panel">
+        <h2>🐍 Snake Pro</h2>
 
-<!-- ===== LOCKER ===== -->
-<div id="lockerScreen" class="hidden">
-    <h2>🔒 Locker</h2>
-    <div id="ownedColors"></div>
-    <button onclick="showMenu()">⬅ Back</button>
+        <div class="stat">Coins: <span id="coins">0</span></div>
+        <div class="stat">High Score: <span id="highscore">0</span></div>
+
+        <button onclick="startGame()">Play</button>
+        <button onclick="restartGame()">Restart</button>
+
+        <hr>
+
+        <h3>Shop</h3>
+        <button onclick="buyColor('lime')">Green (10)</button>
+        <button onclick="buyColor('cyan')">Cyan (20)</button>
+        <button onclick="buyColor('red')">Red (30)</button>
+    </div>
+
 </div>
 
 <script>
 
-// ===== GLOBAL DATA =====
-let coins = parseInt(localStorage.getItem("coins")) || 0;
-let highScore = parseInt(localStorage.getItem("highScore")) || 0;
-let ownedColors = JSON.parse(localStorage.getItem("ownedColors")) || ["green"];
-let equippedColor = localStorage.getItem("equippedColor") || "green";
-
-updateUI();
-
-// ===== SCREEN CONTROL =====
-function showMenu(){
-    hideAll();
-    document.getElementById("menuScreen").classList.remove("hidden");
-}
-
-function showGame(){
-    hideAll();
-    document.getElementById("gameScreen").classList.remove("hidden");
-    startGame();
-}
-
-function showShop(){
-    hideAll();
-    document.getElementById("shopScreen").classList.remove("hidden");
-}
-
-function showLocker(){
-    hideAll();
-    document.getElementById("lockerScreen").classList.remove("hidden");
-    renderLocker();
-}
-
-function hideAll(){
-    document.getElementById("menuScreen").classList.add("hidden");
-    document.getElementById("gameScreen").classList.add("hidden");
-    document.getElementById("shopScreen").classList.add("hidden");
-    document.getElementById("lockerScreen").classList.add("hidden");
-}
-
-// ===== SHOP SYSTEM =====
-function buyColor(color, price){
-    if(coins >= price && !ownedColors.includes(color)){
-        coins -= price;
-        ownedColors.push(color);
-        saveData();
-        alert("Purchased!");
-    }else{
-        alert("Not enough coins or already owned.");
-    }
-}
-
-function renderLocker(){
-    let div = document.getElementById("ownedColors");
-    div.innerHTML="";
-    ownedColors.forEach(c=>{
-        div.innerHTML += `<button onclick="equipColor('${c}')">${c}</button>`;
-    });
-}
-
-function equipColor(color){
-    equippedColor = color;
-    localStorage.setItem("equippedColor", color);
-    alert("Equipped!");
-}
-
-// ===== SAVE =====
-function saveData(){
-    localStorage.setItem("coins", coins);
-    localStorage.setItem("highScore", highScore);
-    localStorage.setItem("ownedColors", JSON.stringify(ownedColors));
-    updateUI();
-}
-
-function updateUI(){
-    document.getElementById("coinsDisplay").innerText = coins;
-    document.getElementById("highDisplay").innerText = highScore;
-}
-
-// ===== GAME ENGINE =====
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const box = 20;
 
-let snake, food, direction, score, game;
+let snake;
+let direction;
+let food;
+let gameInterval = null;
+let tile = 20;
+let running = false;
+
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+let highscore = parseInt(localStorage.getItem("highscore")) || 0;
+let snakeColor = localStorage.getItem("snakeColor") || "lime";
+
+document.getElementById("coins").innerText = coins;
+document.getElementById("highscore").innerText = highscore;
+
+function init(){
+    snake = [{x:200,y:200}];
+    direction = null;
+    spawnFood();
+    draw();
+}
 
 function startGame(){
-    snake=[{x:200,y:200}];
-    direction="RIGHT";
-    score=0;
-    spawnFood();
-    clearInterval(game);
-    game=setInterval(draw,100);
+    if(running) return;
+    running = true;
+    gameInterval = setInterval(update,100);
+}
+
+function restartGame(){
+    clearInterval(gameInterval);
+    running = false;
+    init();
 }
 
 function spawnFood(){
-    food={
-        x:Math.floor(Math.random()*20)*box,
-        y:Math.floor(Math.random()*20)*box
+    food = {
+        x: Math.floor(Math.random()*20)*20,
+        y: Math.floor(Math.random()*20)*20
     };
 }
 
-document.addEventListener("keydown",e=>{
-    if(e.key==="ArrowLeft" && direction!=="RIGHT") direction="LEFT";
-    if(e.key==="ArrowRight" && direction!=="LEFT") direction="RIGHT";
-    if(e.key==="ArrowUp" && direction!=="DOWN") direction="UP";
-    if(e.key==="ArrowDown" && direction!=="UP") direction="DOWN";
-});
+function update(){
 
-function draw(){
-    ctx.fillStyle="#1a1a1a";
-    ctx.fillRect(0,0,400,400);
+    if(!direction) return;
 
-    ctx.fillStyle="red";
-    ctx.fillRect(food.x,food.y,box,box);
+    let head = {x:snake[0].x, y:snake[0].y};
 
-    ctx.fillStyle=equippedColor;
-    snake.forEach(p=>ctx.fillRect(p.x,p.y,box,box));
+    if(direction=="right") head.x+=tile;
+    if(direction=="left") head.x-=tile;
+    if(direction=="up") head.y-=tile;
+    if(direction=="down") head.y+=tile;
 
-    let headX=snake[0].x;
-    let headY=snake[0].y;
-
-    if(direction==="LEFT") headX-=box;
-    if(direction==="RIGHT") headX+=box;
-    if(direction==="UP") headY-=box;
-    if(direction==="DOWN") headY+=box;
-
-    if(headX<0||headY<0||headX>=400||headY>=400){
-        endGame();
+    // wall collision
+    if(head.x<0 || head.y<0 || head.x>=400 || head.y>=400){
+        gameOver();
         return;
     }
 
-    if(headX===food.x && headY===food.y){
-        score++;
+    // self collision
+    for(let part of snake){
+        if(head.x==part.x && head.y==part.y){
+            gameOver();
+            return;
+        }
+    }
+
+    snake.unshift(head);
+
+    if(head.x==food.x && head.y==food.y){
         coins++;
+        localStorage.setItem("coins",coins);
+        document.getElementById("coins").innerText = coins;
         spawnFood();
     }else{
         snake.pop();
     }
 
-    snake.unshift({x:headX,y:headY});
-    document.getElementById("score").innerText=score;
+    draw();
 }
 
-function endGame(){
-    clearInterval(game);
+function gameOver(){
+    clearInterval(gameInterval);
+    running = false;
 
-    if(score > highScore){
-        highScore = score;
-        localStorage.setItem("highScore", highScore);
+    if(snake.length>highscore){
+        highscore = snake.length;
+        localStorage.setItem("highscore",highscore);
+        document.getElementById("highscore").innerText = highscore;
     }
 
-    saveData();
-    alert("Game Over!");
-    showMenu();
+    ctx.fillStyle="rgba(0,0,0,0.7)";
+    ctx.fillRect(0,0,400,400);
+
+    ctx.fillStyle="red";
+    ctx.font="40px Arial";
+    ctx.fillText("GAME OVER",100,200);
 }
 
-</script>
+function draw(){
 
+    ctx.clearRect(0,0,400,400);
+
+    // grid
+    ctx.strokeStyle="#222";
+    for(let i=0;i<400;i+=20){
+        ctx.beginPath();
+        ctx.moveTo(i,0);
+        ctx.lineTo(i,400);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0,i);
+        ctx.lineTo(400,i);
+        ctx.stroke();
+    }
+
+    // food
+    ctx.fillStyle="red";
+    ctx.fillRect(food.x,food.y,tile,tile);
+
+    // snake
+    ctx.fillStyle=snakeColor;
+    for(let part of snake){
+        ctx.fillRect(part.x,part.y,tile,tile);
+    }
+}
+
+function buyColor(color){
+
+    let price = 0;
+    if(color=="lime") price=10;
+    if(color=="cyan") price=20;
+    if(color=="red") price=30;
+
+    if(coins>=price){
+        coins-=price;
+        localStorage.setItem("coins",coins);
+        localStorage.setItem("snakeColor",color);
+        snakeColor=color;
+        document.getElementById("coins").innerText = coins;
+        alert("Color unlocked!");
+    }else{
+        alert("Not enough coins!");
+    }
+}
+
+document.addEventListener("keydown", e=>{
+    if(e.key=="ArrowRight" && direction!="left") direction="right";
+    if(e.key=="ArrowLeft" && direction!="right") direction="left";
+    if(e.key=="ArrowUp" && direction!="down") direction="up";
+    if(e.key=="ArrowDown" && direction!="up") direction="down";
+});
+
+init();
+
+</script>
 </body>
 </html>
