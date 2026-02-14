@@ -283,23 +283,6 @@ function capitalize(str){
     return str.charAt(0).toUpperCase()+str.slice(1);
 }
 
-// ================= LOOP =================
-
-function loop(time){
-    if(time-lastTime>baseSpeed){
-        updateGame();
-        lastTime=time;
-    }
-
-    if(gameState==="menu") drawMenu();
-    if(gameState==="settings") drawSettings();
-    if(gameState==="game") drawGame();
-
-    requestAnimationFrame(loop);
-}
-
-loop();
-
     const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -550,7 +533,10 @@ function loop(time){
         lastTime=time;
     }
 
+    if(gameState==="menu") drawMenu();
+    if(gameState==="settings") drawSettings();
     if(gameState==="game") drawGame();
+
     requestAnimationFrame(loop);
 }
 
