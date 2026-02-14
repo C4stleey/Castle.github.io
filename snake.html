@@ -48,6 +48,16 @@ let selectedBiome = parseInt(localStorage.getItem("biome")) || 0;
 let selectedFruit = parseInt(localStorage.getItem("fruit")) || 0;
 let selectedPower = parseInt(localStorage.getItem("power")) || 0;
 
+let selectedColor = parseInt(localStorage.getItem("color")) || 0;
+let unlockedColors = JSON.parse(localStorage.getItem("unlockedColors")) || [0];
+
+let colors = [
+{ name:"Lime", value:"lime", price:0 },
+{ name:"Red", value:"red", price:30 },
+{ name:"Cyan", value:"cyan", price:50 },
+{ name:"Yellow", value:"yellow", price:70 }
+];
+
 let unlockedBiomes = JSON.parse(localStorage.getItem("unlockedBiomes")) || [0];
 let unlockedFruits = JSON.parse(localStorage.getItem("unlockedFruits")) || [0];
 let unlockedPowers = JSON.parse(localStorage.getItem("unlockedPowers")) || [0];
@@ -90,17 +100,31 @@ ctx.fillText("Coins: "+coins,300,450);
 
 function drawShop(){
 ctx.clearRect(0,0,600,600);
+
 ctx.fillStyle="white";
 ctx.textAlign="center";
 ctx.font="35px Arial";
 ctx.fillText("SHOP",300,80);
+
 ctx.textAlign="left";
 ctx.fillText("← RETURN",20,40);
-ctx.textAlign="center";
-ctx.font="20px Arial";
-ctx.fillText("Unlock items in SETTINGS",300,200);
-}
 
+ctx.textAlign="right";
+ctx.fillText("Coins: "+coins,580,40);
+
+ctx.textAlign="center";
+ctx.font="22px Arial";
+
+ctx.fillText("Snake Colors",300,200);
+ctx.fillText("< "+colors[selectedColor].name+" >",300,230);
+
+if(unlockedColors.includes(selectedColor)){
+ctx.fillText("OWNED (click to use)",300,255);
+}else{
+ctx.fillText("BUY - "+colors[selectedColor].price+" Coins",300,255);
+}
+}
+  
 function drawSettings(){
 ctx.clearRect(0,0,600,600);
 ctx.fillStyle="white";
@@ -244,7 +268,7 @@ ctx.fill();
 }
 }
 
-ctx.fillStyle="lime";
+ctx.fillStyle = colors[selectedColor].value;
 for(let part of snake){
 ctx.fillRect(part.x*gridSize,part.y*gridSize,gridSize,gridSize);
 }
@@ -287,7 +311,40 @@ if(y>280&&y<310) gameState="shop";
 if(y>330&&y<360) gameState="settings";
 }
 else if(gameState==="shop"){
-if(e.offsetX<150 && y<60) gameState="menu";
+
+if(e.offsetX<150 && e.offsetY<60){
+gameState="menu";
+return;
+}
+
+if(e.offsetY>200 && e.offsetY<240){
+
+if(e.offsetX<200){
+selectedColor=(selectedColor-1+colors.length)%colors.length;
+}
+
+else if(e.offsetX>400){
+selectedColor=(selectedColor+1)%colors.length;
+}
+
+else{
+
+if(!unlockedColors.includes(selectedColor)){
+if(coins>=colors[selectedColor].price){
+coins-=colors[selectedColor].price;
+unlockedColors.push(selectedColor);
+localStorage.setItem("coins",coins);
+localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
+}
+}else{
+localStorage.setItem("color",selectedColor);
+}
+}
+
+}
+
+}
+
 }
 else if(gameState==="settings"){
 if(e.offsetX<150 && y<60){ gameState="menu"; return; }
