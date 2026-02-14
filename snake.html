@@ -289,82 +289,112 @@ canvas.addEventListener("click",e=>{
 let x=e.offsetX,y=e.offsetY;
 
 if(gameState==="menu"){
-if(y>230&&y<260)startGame();
-if(y>280&&y<310)gameState="shop";
-if(y>330&&y<360)gameState="settings";
+    if(y>230&&y<260) startGame();
+    if(y>280&&y<310) gameState="shop";
+    if(y>330&&y<360) gameState="settings";
+    if(y>380&&y<420) window.location.href="index.html"; // RETURN TO WEBSITE
 }
+
 else if(gameState==="shop"){
-if(x<150&&y<60){gameState="menu";return;}
-if(y>200&&y<260){
-if(x<250)selectedColor=(selectedColor-1+colors.length)%colors.length;
-else if(x>350)selectedColor=(selectedColor+1)%colors.length;
-else{
-if(!unlockedColors.includes(selectedColor)){
-if(coins>=colors[selectedColor].price){
-coins-=colors[selectedColor].price;
-unlockedColors.push(selectedColor);
-localStorage.setItem("coins",coins);
-localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
+    if(x<150&&y<60){gameState="menu";return;}
+
+    if(y>200&&y<260){
+
+        if(x<250)
+            selectedColor=(selectedColor-1+colors.length)%colors.length;
+
+        else if(x>350)
+            selectedColor=(selectedColor+1)%colors.length;
+
+        else{
+
+            if(!unlockedColors.includes(selectedColor)){
+
+                if(coins>=colors[selectedColor].price){
+                    coins-=colors[selectedColor].price;
+                    unlockedColors.push(selectedColor);
+                    localStorage.setItem("coins",coins);
+                    localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
+                }
+
+            }else{
+                localStorage.setItem("color",selectedColor);
+            }
+
+        }
+    }
 }
-}else{
-localStorage.setItem("color",selectedColor);
-}
-}
-}
-}
+
 else if(gameState==="settings"){
-if(x<150&&y<60){gameState="menu";return;}
-handleSettingsClick(x,y);
+    if(x<150&&y<60){gameState="menu";return;}
+    handleSettingsClick(x,y);
 }
 });
 
 function handleSettingsClick(x,y){
-handleOptionClick(x,y,150,biomes,unlockedBiomes,"biome");
-handleOptionClick(x,y,260,fruits,unlockedFruits,"fruit");
-handleOptionClick(x,y,370,powers,unlockedPowers,"power");
+    handleOptionClick(x,y,150,biomes,unlockedBiomes,"biome");
+    handleOptionClick(x,y,260,fruits,unlockedFruits,"fruit");
+    handleOptionClick(x,y,370,powers,unlockedPowers,"power");
 }
 
 function handleOptionClick(x,y,baseY,array,unlocked,key){
-if(y>baseY&&y<baseY+70){
-if(x<250){
-if(key==="biome")selectedBiome=(selectedBiome-1+array.length)%array.length;
-if(key==="fruit")selectedFruit=(selectedFruit-1+array.length)%array.length;
-if(key==="power")selectedPower=(selectedPower-1+array.length)%array.length;
-}
-else if(x>350){
-if(key==="biome")selectedBiome=(selectedBiome+1)%array.length;
-if(key==="fruit")selectedFruit=(selectedFruit+1)%array.length;
-if(key==="power")selectedPower=(selectedPower+1)%array.length;
-}
-else{
-let index=(key==="biome"?selectedBiome:key==="fruit"?selectedFruit:selectedPower);
-if(!unlocked.includes(index)){
-if(coins>=array[index].price){
-coins-=array[index].price;
-unlocked.push(index);
-localStorage.setItem("coins",coins);
-localStorage.setItem("unlocked"+key.charAt(0).toUpperCase()+key.slice(1)+"s",JSON.stringify(unlocked));
-}
-}else{
-localStorage.setItem(key,index);
-}
-}
-}
+
+    if(y>baseY&&y<baseY+70){
+
+        if(x<250){
+
+            if(key==="biome") selectedBiome=(selectedBiome-1+array.length)%array.length;
+            if(key==="fruit") selectedFruit=(selectedFruit-1+array.length)%array.length;
+            if(key==="power") selectedPower=(selectedPower-1+array.length)%array.length;
+
+        }
+
+        else if(x>350){
+
+            if(key==="biome") selectedBiome=(selectedBiome+1)%array.length;
+            if(key==="fruit") selectedFruit=(selectedFruit+1)%array.length;
+            if(key==="power") selectedPower=(selectedPower+1)%array.length;
+
+        }
+
+        else{
+
+            let index=(key==="biome"?selectedBiome:key==="fruit"?selectedFruit:selectedPower);
+
+            if(!unlocked.includes(index)){
+
+                if(coins>=array[index].price){
+                    coins-=array[index].price;
+                    unlocked.push(index);
+                    localStorage.setItem("coins",coins);
+                    localStorage.setItem("unlocked"+key.charAt(0).toUpperCase()+key.slice(1)+"s",JSON.stringify(unlocked));
+                }
+
+            }else{
+                localStorage.setItem(key,index);
+            }
+
+        }
+    }
 }
 
 function loop(time){
-if(gameState==="game"){
-if(time-lastTime>currentSpeed){
-updateGame();
-lastTime=time;
+
+    if(gameState==="game"){
+        if(time-lastTime>currentSpeed){
+            updateGame();
+            lastTime=time;
+        }
+        drawGame();
+    }
+
+    if(gameState==="menu") drawMenu();
+    if(gameState==="shop") drawShop();
+    if(gameState==="settings") drawSettings();
+
+    requestAnimationFrame(loop);
 }
-drawGame();
-}
-if(gameState==="menu")drawMenu();
-if(gameState==="shop")drawShop();
-if(gameState==="settings")drawSettings();
-requestAnimationFrame(loop);
-}
+
 loop();
 </script>
 </body>
