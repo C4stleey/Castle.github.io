@@ -4,19 +4,19 @@
 <meta charset="UTF-8">
 <title>Snake Pro 2.0</title>
 <style>
-body {
-margin: 0;
-background: #0a0a0a;
-display: flex;
-justify-content: center;
-align-items: center;
-height: 100vh;
-font-family: Arial, sans-serif;
-color: white;
+body{
+margin:0;
+background:#0a0a0a;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+font-family:Arial;
+color:white;
 }
-canvas {
-background: black;
-border: 5px solid #7fffd4;
+canvas{
+background:black;
+border:5px solid #7fffd4;
 }
 </style>
 </head>
@@ -24,64 +24,77 @@ border: 5px solid #7fffd4;
 <canvas id="game" width="600" height="600"></canvas>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-let gameState = "menu";
+let gameState="menu";
 
-let coins = parseInt(localStorage.getItem("coins")) || 0;
-let highscore = parseInt(localStorage.getItem("highscore")) || 0;
+let coins=parseInt(localStorage.getItem("coins"))||0;
+let highscore=parseInt(localStorage.getItem("highscore"))||0;
 
-let snake = [];
-let direction = "right";
-let foods = [];
-let score = 0;
+let snake=[];
+let direction="right";
+let foods=[];
+let score=0;
 
-let lastTime = 0;
-let baseSpeed = 120;
-let currentSpeed = 120;
+let gridSize=20;
+let tileCount=30;
 
-let gridSize = 20;
-let tileCount = 30;
+let lastTime=0;
+let baseSpeed=120;
+let currentSpeed=120;
 
-let selectedBiome = parseInt(localStorage.getItem("biome")) || 0;
-let selectedFruit = parseInt(localStorage.getItem("fruit")) || 0;
-let selectedPower = parseInt(localStorage.getItem("power")) || 0;
+let selectedBiome=parseInt(localStorage.getItem("biome"))||0;
+let selectedFruit=parseInt(localStorage.getItem("fruit"))||0;
+let selectedPower=parseInt(localStorage.getItem("power"))||0;
+let selectedColor=parseInt(localStorage.getItem("color"))||0;
 
-let selectedColor = parseInt(localStorage.getItem("color")) || 0;
-let unlockedColors = JSON.parse(localStorage.getItem("unlockedColors")) || [0];
+let unlockedBiomes=JSON.parse(localStorage.getItem("unlockedBiomes"))||[0];
+let unlockedFruits=JSON.parse(localStorage.getItem("unlockedFruits"))||[0];
+let unlockedPowers=JSON.parse(localStorage.getItem("unlockedPowers"))||[0];
+let unlockedColors=JSON.parse(localStorage.getItem("unlockedColors"))||[0];
 
-let colors = [
-{ name:"Lime", value:"lime", price:0 },
-{ name:"Red", value:"red", price:30 },
-{ name:"Cyan", value:"cyan", price:50 },
-{ name:"Yellow", value:"yellow", price:70 }
+let slowTiles=[];
+let pyramids=[];
+
+let biomes=[
+{name:"Classic",price:0},
+{name:"Snow",price:50},
+{name:"Desert",price:80}
 ];
 
-let unlockedBiomes = JSON.parse(localStorage.getItem("unlockedBiomes")) || [0];
-let unlockedFruits = JSON.parse(localStorage.getItem("unlockedFruits")) || [0];
-let unlockedPowers = JSON.parse(localStorage.getItem("unlockedPowers")) || [0];
-
-let slowTiles = [];
-let pyramids = [];
-
-let biomes = [
-{ name:"Classic", price:0 },
-{ name:"Snow", price:50 },
-{ name:"Desert", price:80 }
+let fruits=[
+{name:"Apple",price:0},
+{name:"Banana",price:30}
 ];
 
-let fruits = [
-{ name:"Apple", price:0 },
-{ name:"Banana", price:30 }
+let powers=[
+{name:"None",price:0},
+{name:"Speed x2",price:40},
+{name:"Speed x3",price:60},
+{name:"Multiple x2",price:70}
 ];
 
-let powers = [
-{ name:"None", price:0 },
-{ name:"Speed x2", price:40 },
-{ name:"Speed x3", price:60 },
-{ name:"Multiple x2", price:70 }
+let colors=[
+{name:"Lime",value:"lime",price:0},
+{name:"Red",value:"red",price:30},
+{name:"Cyan",value:"cyan",price:50},
+{name:"Yellow",value:"yellow",price:70}
 ];
+
+function drawGrid(){
+ctx.strokeStyle="#111";
+for(let i=0;i<=tileCount;i++){
+ctx.beginPath();
+ctx.moveTo(i*gridSize,0);
+ctx.lineTo(i*gridSize,600);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(0,i*gridSize);
+ctx.lineTo(600,i*gridSize);
+ctx.stroke();
+}
+}
 
 function drawMenu(){
 ctx.clearRect(0,0,600,600);
@@ -100,31 +113,34 @@ ctx.fillText("Coins: "+coins,300,450);
 
 function drawShop(){
 ctx.clearRect(0,0,600,600);
-
 ctx.fillStyle="white";
 ctx.textAlign="center";
 ctx.font="35px Arial";
 ctx.fillText("SHOP",300,80);
-
 ctx.textAlign="left";
 ctx.fillText("← RETURN",20,40);
-
 ctx.textAlign="right";
 ctx.fillText("Coins: "+coins,580,40);
-
 ctx.textAlign="center";
 ctx.font="22px Arial";
 
-ctx.fillText("Snake Colors",300,200);
-ctx.fillText("< "+colors[selectedColor].name+" >",300,230);
+ctx.fillText("Snake Colors",300,180);
+ctx.fillText("<",200,220);
+ctx.fillText(">",400,220);
+
+ctx.fillStyle=colors[selectedColor].value;
+ctx.fillRect(270,200,60,60);
+
+ctx.fillStyle="white";
+ctx.fillText(colors[selectedColor].name,300,280);
 
 if(unlockedColors.includes(selectedColor)){
-ctx.fillText("OWNED (click to use)",300,255);
+ctx.fillText("OWNED (click center to use)",300,310);
 }else{
-ctx.fillText("BUY - "+colors[selectedColor].price+" Coins",300,255);
+ctx.fillText("BUY - "+colors[selectedColor].price+" Coins",300,310);
 }
 }
-  
+
 function drawSettings(){
 ctx.clearRect(0,0,600,600);
 ctx.fillStyle="white";
@@ -138,24 +154,21 @@ ctx.fillText("Coins: "+coins,580,40);
 ctx.textAlign="center";
 ctx.font="22px Arial";
 
-ctx.fillText("Biomes",300,150);
-ctx.fillText("< "+biomes[selectedBiome].name+" >",300,180);
-drawUnlockText(unlockedBiomes,selectedBiome,biomes,300,205);
-
-ctx.fillText("Fruits",300,260);
-ctx.fillText("< "+fruits[selectedFruit].name+" >",300,290);
-drawUnlockText(unlockedFruits,selectedFruit,fruits,300,315);
-
-ctx.fillText("Power Ups",300,370);
-ctx.fillText("< "+powers[selectedPower].name+" >",300,400);
-drawUnlockText(unlockedPowers,selectedPower,powers,300,425);
+drawOption("Biomes",biomes,selectedBiome,unlockedBiomes,150);
+drawOption("Fruits",fruits,selectedFruit,unlockedFruits,260);
+drawOption("Power Ups",powers,selectedPower,unlockedPowers,370);
 }
 
-function drawUnlockText(unlocked,index,array,x,y){
+function drawOption(title,array,index,unlocked,y){
+ctx.fillText(title,300,y);
+ctx.fillText("<",200,y+30);
+ctx.fillText(">",400,y+30);
+ctx.fillText(array[index].name,300,y+30);
+
 if(unlocked.includes(index)){
-ctx.fillText("OWNED (click to use)",x,y);
+ctx.fillText("OWNED (click center to use)",300,y+55);
 }else{
-ctx.fillText("BUY - "+array[index].price+" Coins",x,y);
+ctx.fillText("BUY - "+array[index].price+" Coins",300,y+55);
 }
 }
 
@@ -174,87 +187,61 @@ gameState="game";
 function generateBiome(){
 if(selectedBiome===1){
 for(let i=0;i<20;i++){
-slowTiles.push({
-x:Math.floor(Math.random()*tileCount),
-y:Math.floor(Math.random()*tileCount)
-});
+slowTiles.push({x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)});
 }
 }
 if(selectedBiome===2){
 for(let i=0;i<10;i++){
-pyramids.push({
-x:Math.floor(Math.random()*tileCount),
-y:Math.floor(Math.random()*tileCount)
-});
+pyramids.push({x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)});
 }
 }
 }
 
 function spawnFood(){
-let amount = selectedPower===3 ? 2 : 1;
-for(let i=foods.length;i<amount;i++){
-foods.push({
-x:Math.floor(Math.random()*tileCount),
-y:Math.floor(Math.random()*tileCount)
-});
+let amount=selectedPower===3?2:1;
+while(foods.length<amount){
+foods.push({x:Math.floor(Math.random()*tileCount),y:Math.floor(Math.random()*tileCount)});
 }
 }
 
 function updateGame(){
 let head={...snake[0]};
+if(direction==="right")head.x++;
+if(direction==="left")head.x--;
+if(direction==="up")head.y--;
+if(direction==="down")head.y++;
 
-if(direction==="right") head.x++;
-if(direction==="left") head.x--;
-if(direction==="up") head.y--;
-if(direction==="down") head.y++;
-
-if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount) return endGame();
-
-for(let part of snake){
-if(head.x===part.x&&head.y===part.y) return endGame();
-}
-
-for(let p of pyramids){
-if(head.x===p.x&&head.y===p.y) return endGame();
-}
+if(head.x<0||head.x>=tileCount||head.y<0||head.y>=tileCount)return endGame();
+for(let part of snake)if(head.x===part.x&&head.y===part.y)return endGame();
+for(let p of pyramids)if(head.x===p.x&&head.y===p.y)return endGame();
 
 snake.unshift(head);
 
 let ate=false;
 for(let i=foods.length-1;i>=0;i--){
-if(head.x===foods[i].x && head.y===foods[i].y){
+if(head.x===foods[i].x&&head.y===foods[i].y){
 foods.splice(i,1);
 score++;
 coins++;
 ate=true;
 }
 }
+if(!ate)snake.pop();else spawnFood();
 
-if(!ate){
-snake.pop();
-}else{
-spawnFood();
-}
+currentSpeed=baseSpeed-Math.min(score*2,40);
+if(selectedPower===1)currentSpeed=70;
+if(selectedPower===2)currentSpeed=50;
 
-currentSpeed = baseSpeed - Math.min(score*2,40);
-if(selectedPower===1) currentSpeed=70;
-if(selectedPower===2) currentSpeed=50;
-
-for(let s of slowTiles){
-if(head.x===s.x&&head.y===s.y){
-currentSpeed=200;
-}
-}
+for(let s of slowTiles)if(head.x===s.x&&head.y===s.y)currentSpeed=200;
 }
 
 function drawGame(){
 ctx.clearRect(0,0,600,600);
+drawGrid();
 
 if(selectedBiome===1){
 ctx.fillStyle="#cceeff";
-for(let s of slowTiles){
-ctx.fillRect(s.x*gridSize,s.y*gridSize,gridSize,gridSize);
-}
+for(let s of slowTiles)ctx.fillRect(s.x*gridSize,s.y*gridSize,gridSize,gridSize);
 }
 
 if(selectedBiome===2){
@@ -268,15 +255,11 @@ ctx.fill();
 }
 }
 
-ctx.fillStyle = colors[selectedColor].value;
-for(let part of snake){
-ctx.fillRect(part.x*gridSize,part.y*gridSize,gridSize,gridSize);
-}
+ctx.fillStyle=colors[selectedColor].value;
+for(let part of snake)ctx.fillRect(part.x*gridSize,part.y*gridSize,gridSize,gridSize);
 
-ctx.fillStyle= selectedFruit===1 ? "yellow" : "red";
-for(let f of foods){
-ctx.fillRect(f.x*gridSize,f.y*gridSize,gridSize,gridSize);
-}
+ctx.fillStyle=selectedFruit===1?"yellow":"red";
+for(let f of foods)ctx.fillRect(f.x*gridSize,f.y*gridSize,gridSize,gridSize);
 
 ctx.fillStyle="white";
 ctx.fillText("Score: "+score,10,20);
@@ -303,104 +286,70 @@ if(e.key==="ArrowRight"&&direction!=="left")direction="right";
 });
 
 canvas.addEventListener("click",e=>{
-let y = e.offsetY;
+let x=e.offsetX,y=e.offsetY;
 
 if(gameState==="menu"){
-    if(y>230&&y<260) startGame();
-    if(y>280&&y<310) gameState="shop";
-    if(y>330&&y<360) gameState="settings";
+if(y>230&&y<260)startGame();
+if(y>280&&y<310)gameState="shop";
+if(y>330&&y<360)gameState="settings";
 }
-
 else if(gameState==="shop"){
-
-    if(e.offsetX<150 && e.offsetY<60){
-        gameState="menu";
-        return;
-    }
-
-    if(e.offsetY>200 && e.offsetY<260){
-
-        if(e.offsetX<200){
-            selectedColor=(selectedColor-1+colors.length)%colors.length;
-        }
-
-        else if(e.offsetX>400){
-            selectedColor=(selectedColor+1)%colors.length;
-        }
-
-        else{
-
-            if(!unlockedColors.includes(selectedColor)){
-                if(coins>=colors[selectedColor].price){
-                    coins-=colors[selectedColor].price;
-                    unlockedColors.push(selectedColor);
-                    localStorage.setItem("coins",coins);
-                    localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
-                }
-            }else{
-                localStorage.setItem("color",selectedColor);
-            }
-
-        }
-    }
+if(x<150&&y<60){gameState="menu";return;}
+if(y>200&&y<260){
+if(x<250)selectedColor=(selectedColor-1+colors.length)%colors.length;
+else if(x>350)selectedColor=(selectedColor+1)%colors.length;
+else{
+if(!unlockedColors.includes(selectedColor)){
+if(coins>=colors[selectedColor].price){
+coins-=colors[selectedColor].price;
+unlockedColors.push(selectedColor);
+localStorage.setItem("coins",coins);
+localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
 }
-
+}else{
+localStorage.setItem("color",selectedColor);
+}
+}
+}
+}
 else if(gameState==="settings"){
-
-    if(e.offsetX<150 && y<60){
-        gameState="menu";
-        return;
-    }
-
-    handleOption(e,150,180,"biome");
-    handleOption(e,260,290,"fruit");
-    handleOption(e,370,400,"power");
+if(x<150&&y<60){gameState="menu";return;}
+handleSettingsClick(x,y);
 }
-
 });
 
-
-function handleOption(e,minY,maxY,type){
-if(e.offsetY>minY&&e.offsetY<maxY){
-if(e.offsetX<200) changeOption(type,-1);
-else if(e.offsetX>400) changeOption(type,1);
-else buyOrSelect(type);
-}
+function handleSettingsClick(x,y){
+handleOptionClick(x,y,150,biomes,unlockedBiomes,"biome");
+handleOptionClick(x,y,260,fruits,unlockedFruits,"fruit");
+handleOptionClick(x,y,370,powers,unlockedPowers,"power");
 }
 
-function changeOption(type,dir){
-if(type==="biome"){
-selectedBiome=(selectedBiome+dir+biomes.length)%biomes.length;
+function handleOptionClick(x,y,baseY,array,unlocked,key){
+if(y>baseY&&y<baseY+70){
+if(x<250){
+if(key==="biome")selectedBiome=(selectedBiome-1+array.length)%array.length;
+if(key==="fruit")selectedFruit=(selectedFruit-1+array.length)%array.length;
+if(key==="power")selectedPower=(selectedPower-1+array.length)%array.length;
 }
-if(type==="fruit"){
-selectedFruit=(selectedFruit+dir+fruits.length)%fruits.length;
+else if(x>350){
+if(key==="biome")selectedBiome=(selectedBiome+1)%array.length;
+if(key==="fruit")selectedFruit=(selectedFruit+1)%array.length;
+if(key==="power")selectedPower=(selectedPower+1)%array.length;
 }
-if(type==="power"){
-selectedPower=(selectedPower+dir+powers.length)%powers.length;
-}
-}
-
-function buyOrSelect(type){
-if(type==="biome") handleBuy(selectedBiome,biomes,unlockedBiomes,"biome");
-if(type==="fruit") handleBuy(selectedFruit,fruits,unlockedFruits,"fruit");
-if(type==="power") handleBuy(selectedPower,powers,unlockedPowers,"power");
-}
-
-function handleBuy(index,array,unlocked,key){
+else{
+let index=(key==="biome"?selectedBiome:key==="fruit"?selectedFruit:selectedPower);
 if(!unlocked.includes(index)){
 if(coins>=array[index].price){
 coins-=array[index].price;
 unlocked.push(index);
 localStorage.setItem("coins",coins);
-localStorage.setItem("unlocked"+capitalize(key)+"s",JSON.stringify(unlocked));
+localStorage.setItem("unlocked"+key.charAt(0).toUpperCase()+key.slice(1)+"s",JSON.stringify(unlocked));
 }
 }else{
 localStorage.setItem(key,index);
 }
 }
-
-function capitalize(str){
-return str.charAt(0).toUpperCase()+str.slice(1);
+}
 }
 
 function loop(time){
@@ -411,9 +360,9 @@ lastTime=time;
 }
 drawGame();
 }
-if(gameState==="menu") drawMenu();
-if(gameState==="settings") drawSettings();
-if(gameState==="shop") drawShop();
+if(gameState==="menu")drawMenu();
+if(gameState==="shop")drawShop();
+if(gameState==="settings")drawSettings();
 requestAnimationFrame(loop);
 }
 loop();
