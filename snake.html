@@ -245,8 +245,15 @@ canvas.addEventListener("click",e=>{
 
 // ================= LOOP =================
 
-function loop(){
-    updateGame();
+let lastTime = 0;
+let gameSpeed = 120; // menor número = más rápido
+
+function loop(currentTime){
+
+    if(currentTime - lastTime > gameSpeed){
+        updateGame();
+        lastTime = currentTime;
+    }
 
     if(gameState==="menu") drawMenu();
     if(gameState==="game") drawGame();
