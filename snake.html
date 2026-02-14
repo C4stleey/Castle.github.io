@@ -97,19 +97,34 @@ ctx.stroke();
 }
 
 function drawMenu(){
-ctx.clearRect(0,0,600,600);
-ctx.fillStyle="white";
-ctx.textAlign="center";
-ctx.font="40px Arial";
-ctx.fillText("SNAKE PRO 2.0",300,150);
-ctx.font="25px Arial";
-ctx.fillText("PLAY",300,250);
-ctx.fillText("SHOP",300,300);
-ctx.fillText("SETTINGS",300,350);
-ctx.font="18px Arial";
-ctx.fillText("Highscore: "+highscore,300,420);
-ctx.fillText("Coins: "+coins,300,450);
+    ctx.clearRect(0,0,600,600);
+
+    ctx.fillStyle="white";
+    ctx.textAlign="center";
+
+    ctx.font="40px Arial";
+    ctx.fillText("SNAKE PRO 2.0",300,150);
+
+    ctx.font="25px Arial";
+    ctx.fillText("PLAY",300,250);
+    ctx.fillText("SHOP",300,300);
+    ctx.fillText("SETTINGS",300,350);
+
+    // RETURN BUTTON
+    ctx.fillStyle="white";
+    ctx.fillRect(300-120,380,240,40);
+
+    ctx.fillStyle="black";
+    ctx.font="18px Arial";
+    ctx.fillText("Return to Website",300,405);
+
+    // Stats
+    ctx.fillStyle="white";
+    ctx.font="18px Arial";
+    ctx.fillText("Highscore: "+highscore,300,470);
+    ctx.fillText("Coins: "+coins,300,500);
 }
+
 
 function drawShop(){
 ctx.clearRect(0,0,600,600);
