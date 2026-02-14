@@ -303,56 +303,62 @@ if(e.key==="ArrowRight"&&direction!=="left")direction="right";
 });
 
 canvas.addEventListener("click",e=>{
-let y=e.offsetY;
+let y = e.offsetY;
 
 if(gameState==="menu"){
-if(y>230&&y<260) startGame();
-if(y>280&&y<310) gameState="shop";
-if(y>330&&y<360) gameState="settings";
+    if(y>230&&y<260) startGame();
+    if(y>280&&y<310) gameState="shop";
+    if(y>330&&y<360) gameState="settings";
 }
+
 else if(gameState==="shop"){
 
-if(e.offsetX<150 && e.offsetY<60){
-gameState="menu";
-return;
+    if(e.offsetX<150 && e.offsetY<60){
+        gameState="menu";
+        return;
+    }
+
+    if(e.offsetY>200 && e.offsetY<260){
+
+        if(e.offsetX<200){
+            selectedColor=(selectedColor-1+colors.length)%colors.length;
+        }
+
+        else if(e.offsetX>400){
+            selectedColor=(selectedColor+1)%colors.length;
+        }
+
+        else{
+
+            if(!unlockedColors.includes(selectedColor)){
+                if(coins>=colors[selectedColor].price){
+                    coins-=colors[selectedColor].price;
+                    unlockedColors.push(selectedColor);
+                    localStorage.setItem("coins",coins);
+                    localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
+                }
+            }else{
+                localStorage.setItem("color",selectedColor);
+            }
+
+        }
+    }
 }
 
-if(e.offsetY>200 && e.offsetY<240){
-
-if(e.offsetX<200){
-selectedColor=(selectedColor-1+colors.length)%colors.length;
-}
-
-else if(e.offsetX>400){
-selectedColor=(selectedColor+1)%colors.length;
-}
-
-else{
-
-if(!unlockedColors.includes(selectedColor)){
-if(coins>=colors[selectedColor].price){
-coins-=colors[selectedColor].price;
-unlockedColors.push(selectedColor);
-localStorage.setItem("coins",coins);
-localStorage.setItem("unlockedColors",JSON.stringify(unlockedColors));
-}
-}else{
-localStorage.setItem("color",selectedColor);
-}
-}
-
-}
-
-}
-
-}
 else if(gameState==="settings"){
-if(e.offsetX<150 && y<60){ gameState="menu"; return; }
-handleOption(e,150,180,"biome");
-handleOption(e,260,290,"fruit");
-handleOption(e,370,400,"power");
+
+    if(e.offsetX<150 && y<60){
+        gameState="menu";
+        return;
+    }
+
+    handleOption(e,150,180,"biome");
+    handleOption(e,260,290,"fruit");
+    handleOption(e,370,400,"power");
 }
+
 });
+
 
 function handleOption(e,minY,maxY,type){
 if(e.offsetY>minY&&e.offsetY<maxY){
